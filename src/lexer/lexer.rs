@@ -9,6 +9,15 @@ pub enum Token {
 
     Assign,
     Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
+
+    Lt,
+    Gt,
+    Eq,
+    NotEq,
 
     Comma,
     Semicolon,
@@ -19,6 +28,11 @@ pub enum Token {
 
     Function,
     Let,
+    True,
+    False,
+    If,
+    Else,
+    Return,
 }
 
 pub struct Lexer {
@@ -44,8 +58,26 @@ impl Lexer {
         self.skip_whitespace();
 
         let token = match self.ch {
-            b'=' => Token::Assign,
+            b'=' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Token::Eq
+                }
+                _ => Token::Assign,
+            },
             b'+' => Token::Plus,
+            b'-' => Token::Minus,
+            b'!' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Token::NotEq
+                }
+                _ => Token::Bang,
+            },
+            b'/' => Token::Slash,
+            b'*' => Token::Asterisk,
+            b'<' => Token::Lt,
+            b'>' => Token::Gt,
             b',' => Token::Comma,
             b';' => Token::Semicolon,
             b'(' => Token::LParen,
@@ -57,12 +89,17 @@ impl Lexer {
                 return match ident.as_str() {
                     "fn" => Token::Function,
                     "let" => Token::Let,
+                    "true" => Token::True,
+                    "false" => Token::False,
+                    "if" => Token::If,
+                    "else" => Token::Else,
+                    "return" => Token::Return,
                     _ => Token::Ident(ident),
                 };
             }
             b'0'..=b'9' => return Token::Int(self.read_number()),
             0 => Token::Eof,
-            _ => panic!("Invalid input"),
+            _ => Token::Illegal,
         };
 
         self.read_char();
@@ -77,6 +114,14 @@ impl Lexer {
         }
         self.position = self.read_position;
         self.read_position += 1;
+    }
+
+    fn peek_char(&mut self) -> u8 {
+        if self.read_position >= self.input.len() {
+            0
+        } else {
+            self.input[self.read_position]
+        }
     }
 
     fn read_number(&mut self) -> String {
@@ -135,10 +180,23 @@ mod tests {
     fn test_next_token_complex() {
         let input = r#"let five = 5 ;
             let ten = 10;
+
             let add = fn(x, y) {
                 x + y;
             };
+
             let result = add(five, ten);
+            !-/*5;
+            5 < 10 > 5;
+
+            if (5 < 10) {
+                return true;
+            } else {
+                return false;
+            }
+
+            10 == 10;
+            10 != 9;
         "#;
 
         let mut lexer = Lexer::new(input.into());
@@ -179,6 +237,43 @@ mod tests {
             Token::Comma,
             Token::Ident(String::from("ten")),
             Token::RParen,
+            Token::Semicolon,
+            Token::Bang,
+            Token::Minus,
+            Token::Slash,
+            Token::Asterisk,
+            Token::Int(String::from("5")),
+            Token::Semicolon,
+            Token::Int(String::from("5")),
+            Token::Lt,
+            Token::Int(String::from("10")),
+            Token::Gt,
+            Token::Int(String::from("5")),
+            Token::Semicolon,
+            Token::If,
+            Token::LParen,
+            Token::Int(String::from("5")),
+            Token::Lt,
+            Token::Int(String::from("10")),
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::True,
+            Token::Semicolon,
+            Token::RBrace,
+            Token::Else,
+            Token::LBrace,
+            Token::Return,
+            Token::False,
+            Token::Semicolon,
+            Token::RBrace,
+            Token::Int(String::from("10")),
+            Token::Eq,
+            Token::Int(String::from("10")),
+            Token::Semicolon,
+            Token::Int(String::from("10")),
+            Token::NotEq,
+            Token::Int(String::from("9")),
             Token::Semicolon,
             Token::Eof,
         ];
