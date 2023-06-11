@@ -1,4 +1,7 @@
-#![allow(dead_code)]
+use std::fmt::Display;
+
+use anyhow::Result;
+
 #[derive(PartialEq, Debug)]
 pub enum Token {
     Illegal,
@@ -35,6 +38,40 @@ pub enum Token {
     Return,
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Ident(x) => write!(f, "Ident({})", x),
+            Token::Int(x) => write!(f, "Int({})", x),
+            Token::Illegal => write!(f, "Illegal"),
+            Token::Eof => write!(f, "Eof"),
+            Token::Assign => write!(f, "Assign"),
+            Token::Bang => write!(f, "Bang"),
+            Token::Minus => write!(f, "Minus"),
+            Token::Slash => write!(f, "Slash"),
+            Token::Asterisk => write!(f, "Asterisk"),
+            Token::Eq => write!(f, "Eq"),
+            Token::NotEq => write!(f, "NotEq "),
+            Token::Lt => write!(f, "Lt "),
+            Token::Gt => write!(f, "Gt"),
+            Token::Plus => write!(f, "Plus"),
+            Token::Comma => write!(f, "Comma"),
+            Token::Semicolon => write!(f, "Semicolon"),
+            Token::LParen => write!(f, "LParen"),
+            Token::RParen => write!(f, "RParen"),
+            Token::LBrace => write!(f, "LBrace "),
+            Token::RBrace => write!(f, "RBrace"),
+            Token::Function => write!(f, "Function"),
+            Token::Let => write!(f, "Let"),
+            Token::If => write!(f, "If"),
+            Token::Else => write!(f, "Else"),
+            Token::Return => write!(f, "Return"),
+            Token::True => write!(f, "True"),
+            Token::False => write!(f, "False"),
+        }
+    }
+}
+
 pub struct Lexer {
     input: Vec<u8>,
     position: usize,
@@ -54,7 +91,7 @@ impl Lexer {
         lexer
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Result<Token> {
         self.skip_whitespace();
 
         let token = match self.ch {
@@ -86,7 +123,7 @@ impl Lexer {
             b'}' => Token::RBrace,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_identifier();
-                return match ident.as_str() {
+                return Ok(match ident.as_str() {
                     "fn" => Token::Function,
                     "let" => Token::Let,
                     "true" => Token::True,
@@ -95,15 +132,15 @@ impl Lexer {
                     "else" => Token::Else,
                     "return" => Token::Return,
                     _ => Token::Ident(ident),
-                };
+                });
             }
-            b'0'..=b'9' => return Token::Int(self.read_number()),
+            b'0'..=b'9' => return Ok(Token::Int(self.read_number())),
             0 => Token::Eof,
             _ => Token::Illegal,
         };
 
         self.read_char();
-        token
+        Ok(token)
     }
 
     fn read_char(&mut self) {
@@ -171,7 +208,7 @@ mod tests {
         ];
 
         for elem in test {
-            let tok = lexer.next_token();
+            let tok = lexer.next_token().unwrap();
             assert_eq!(tok, elem);
         }
     }
@@ -279,7 +316,7 @@ mod tests {
         ];
 
         for elem in test {
-            let tok = lexer.next_token();
+            let tok = lexer.next_token().unwrap();
             println!("{:?} | {:?}", tok, elem);
             assert_eq!(tok, elem);
         }
