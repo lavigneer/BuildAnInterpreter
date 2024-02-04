@@ -9,6 +9,7 @@ fn main() -> io::Result<()> {
     stdin().lines().for_each(|line| {
         if let Ok(line) = line {
             let mut lexer = Lexer::new(line);
+
             while let Ok(tok) = lexer.next_token() {
                 println!("{}", tok);
                 if tok == Token::Eof {
